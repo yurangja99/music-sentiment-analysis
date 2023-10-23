@@ -63,7 +63,6 @@ for page in range(start_page, end_page, pages_per_file):
   dataset_chroma = []
   dataset_vad = []
   emotion_tag = []
-  emotion_tag_idx = dict()
   
   page_to = min(page + pages_per_file, end_page)
   for idx in tqdm(range(page, page_to)):
@@ -102,10 +101,7 @@ for page in range(start_page, end_page, pages_per_file):
       dataset_mfcc.append(mfcc.T)
       dataset_chroma.append(chroma.T)
       dataset_vad.append(np.array([row["valence_tags"], row["arousal_tags"], row["dominance_tags"]], dtype=np.float32))
-      emotion_tag.append(json.loads(re.sub("'", '"', row["seeds"])))
-      for seed in emotion_tag[-1]:
-        if seed not in emotion_tag_idx:
-          emotion_tag_idx[seed] = len(emotion_tag_idx)
+      emotion_tag.append(np.array(json.loads(re.sub("'", '"', row["seeds"])), dtype=object))
         
       if PLOT:
         plt.figure(figsize=(24, 18))
@@ -128,13 +124,7 @@ for page in range(start_page, end_page, pages_per_file):
   dataset_mfcc = np.array(dataset_mfcc, dtype=object)
   dataset_chroma = np.array(dataset_chroma, dtype=object)
   dataset_vad = np.array(dataset_vad, dtype=np.float32)
-  dataset_emotion_tag = np.zeros((len(emotion_tag), len(emotion_tag_idx)), dtype=np.float32)
-  for idx, seeds in enumerate(emotion_tag):
-    for seed in seeds:
-      dataset_emotion_tag[idx] += np.eye(len(emotion_tag_idx))[emotion_tag_idx[seed]]
-  dataset_emotion_label = np.ndarray((len(emotion_tag_idx)), dtype=object)
-  for tag in emotion_tag_idx:
-    dataset_emotion_label[emotion_tag_idx[tag]] = tag
+  dataset_emotion_tag = np.array(emotion_tag, dtype=object)
 
   if DEBUG:
     print(f"Dataset:")
@@ -145,13 +135,11 @@ for page in range(start_page, end_page, pages_per_file):
     print(f"Dataset-chroma: {dataset_chroma.shape}")
     print(f"Dataset-vad: {dataset_vad.shape}")
     print(f"Dataset-tag: {dataset_emotion_tag.shape}")
-    print(f"Number of tags: {dataset_emotion_label.shape}")
     print(f"Example:")
     print(f"Dataset-name: {dataset_name[0]}")
     print(f"Dataset-sid: {dataset_sid[0]}")
     print(f"Dataset-vad: {dataset_vad[0]}")
     print(f"Dataset-tag: {dataset_emotion_tag[0]}")
-    print(f"Dataset-emotion: {dataset_emotion_label}")
 
   # save dataset
   np.savez(
@@ -162,8 +150,7 @@ for page in range(start_page, end_page, pages_per_file):
     mfcc=dataset_mfcc,
     chroma=dataset_chroma,
     vad=dataset_vad,
-    tag=dataset_emotion_tag,
-    label=dataset_emotion_label
+    tag=dataset_emotion_tag
   )
   
   if DEBUG:
