@@ -68,7 +68,7 @@ for page in range(start_page, end_page, pages_per_file):
   for idx in tqdm(range(page, page_to)):
     # get tracks with preview url from spotify
     tracks = spotify.tracks(spotify_id_list[min(idx * 50, len(df)):min((idx + 1) * 50, len(df))])["tracks"]
-    tracks = list(filter(lambda t: t["preview_url"] is not None, tracks))
+    tracks = list(filter(lambda t: t is not None and t["preview_url"] is not None, tracks))
     
     for track in tracks:
       # download preview mp3 file
