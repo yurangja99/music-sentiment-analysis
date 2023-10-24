@@ -172,7 +172,7 @@ class Network(nn.Module):
     
     # feature extraction model
     self.feat_model = nn.Sequential(
-      nn.Conv2d(3, 64 * self.groups, kernel_size=3, stride=1, padding=1, groups=self.groups, bias=False),
+      nn.Conv2d(self.groups, 64 * self.groups, kernel_size=3, stride=1, padding=1, groups=self.groups, bias=False),
       nn.BatchNorm2d(64 * self.groups),
       self.__make_block(block, 64 * self.groups, 64 * self.groups, num_blocks[0], stride=1),
       self.__make_block(block, 64 * self.groups, 128 * self.groups, num_blocks[1], stride=2),
@@ -244,46 +244,6 @@ class Network(nn.Module):
     vad = self.sentiment_model(feat)
     tags = self.emotion_tagging_model(feat)
     return vad, tags
-
-  def save(self, path: str):
-    """
-    Save checkpoint for this model. 
-
-    Args:
-        - path (str): path to the checkpoint
-    """
-    torch.save({
-      "model": self.state_dict(),
-      "num_tags": self.num_tags,
-      "use_mel": self.use_mel,
-      "use_mfcc": self.use_mfcc,
-      "use_chroma": self.use_chroma,
-      "block_name": "basic" if self.block == ResidualBlock else "bottleneck",
-      "num_blocks": self.num_blocks
-    }, path)
-  
-  @staticmethod
-  def load(path: str):
-    """
-    Returns a new model from the given path. 
-    
-    Args:
-        - path (str): path to the checkpoint
-    
-    Return:
-        - Network: loaded network.
-    """
-    ckpt = torch.load(path)
-    network = Network(
-      num_tags=ckpt["num_tags"],
-      use_mel=ckpt["use_mel"],
-      use_mfcc=ckpt["use_mfcc"],
-      use_chroma=ckpt["use_chroma"],
-      block=ResidualBlock if ckpt["block_name"] == "basic" else BottleneckResidualBlock,
-      num_blocks=ckpt["num_blocks"]
-    )
-    network.load_state_dict(ckpt["model"])
-    return network
 
   def print_summary(self):
     """
