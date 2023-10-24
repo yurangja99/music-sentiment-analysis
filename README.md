@@ -37,6 +37,8 @@ python generate_dataset.py
 
 ## Dataset
 
+The example data is shown in [Appendix A](#appendix-a-example-of-dataset). 
+
 I used [MuSe Dataset](https://www.kaggle.com/datasets/cakiki/muse-the-musical-sentiment-dataset) that contains sentiment information for 90,001 songs. 
 
 It contains Spotify ID of songs, whose audios are available by using [Spotipy API](https://spotipy.readthedocs.io/en/2.22.1/?highlight=analysis#). However, there are some rows with no spotify id or no preview mp3, 34,951 songs are actually used for this project. 
@@ -62,6 +64,8 @@ The npz files are combined to a full dataset during training.
 
 ## Model
 
+The precise structure of my network is shown in [Appendix B](#appendix-b-structure-of-network). 
+
 I refered to the structure of [ResNet](https://arxiv.org/abs/1512.03385), which is specialized to image classification task. 
 
 I used residual blocks and bottleneck residual blocks. (refer to [`model.py`](./model.py))
@@ -86,12 +90,70 @@ Then, residual block should use short-cut convolution layers instead of identity
 
 ![](./assets/residual_block_2.png)
 
-The precise structure of my network is shown in [Appendix A](#appendix-a-structure-of-network). 
-
 
 ## Appendix
 
-### Appendix A: structure of network
+### Appendix A: example of dataset
+
+Example of dataset created by [`generate_dataset.py`](./generate_dataset.py). 
+```
+import numpy as np
+dataset = np.load("./generated_dataset_from_0_to_5.npz", allow_pickle=True)
+print("- Shape")
+print(dataset["name"].shape)
+print(dataset["sid"].shape)
+print(dataset["mel"].shape)
+print(dataset["mfcc"].shape)
+print(dataset["chroma"].shape)
+print(dataset["vad"].shape)
+print(dataset["tag"].shape)
+print("- Example")
+print(dataset["name"][0])
+print(dataset["sid"][0])
+print(dataset["mel"][0])
+print(dataset["mfcc"][0])
+print(dataset["chroma"][0])
+print(dataset["vad"][0])
+print(dataset["tag"][0])
+
+Output:
+- Shape
+(160,)
+(160,)
+(160, 128, 1280)
+(160, 20, 1280)
+(160, 12, 1280)       
+(160, 3)
+(160,)
+- Example
+Die MF Die
+5bU4KX47KqtDKKaLM4QCzh
+[[0.8921931  0.8826394  0.86752355 ... 0.7913857  0.7893288  0.71895707]
+ [1.         1.         0.92802167 ... 0.8995514  0.89280266 0.8938351 ]
+ [0.72412103 0.8445727  0.8771957  ... 1.         1.         1.        ]
+ ...
+ [0.         0.03049159 0.01508701 ... 0.         0.         0.        ]
+ [0.         0.0667994  0.04237247 ... 0.         0.         0.        ]
+ [0.         0.         0.         ... 0.         0.         0.        ]]
+[[0.20229463 1.         1.         ... 0.53347147 0.19537799 0.        ]
+ [1.         0.9360726  0.8730493  ... 0.912819   0.79200804 0.7885052 ]
+ [0.37528056 0.28411028 0.21658814 ... 0.26413622 0.43587255 0.7210432 ]
+ ...
+ [0.31274277 0.23685233 0.20802146 ... 0.2846035  0.21710268 0.42721128]
+ [0.1658746  0.07240864 0.04286872 ... 0.10906948 0.18872836 0.47467315]
+ [0.1645768  0.12131324 0.1212945  ... 0.02883453 0.15131754 0.42550078]]
+[[0.8064743  0.2711213  0.23993473 ... 0.10256296 0.36805677 0.10222125]
+ [0.45724523 0.33245444 0.3460595  ... 0.5871675  1.         0.78885174]
+ [0.60231984 0.3406307  0.47332138 ... 1.         0.98416984 1.        ]
+ ...
+ [1.         1.         0.99999994 ... 0.17692173 0.44089174 0.886595  ]
+ [0.6301825  0.4857059  0.6312328  ... 0.04157645 0.0155257  0.2726667 ]
+ [0.6730951  0.36262012 0.42126852 ... 0.06647283 0.07971317 0.        ]]
+[3.7711766 5.348235  5.441765 ]
+['aggressive']
+```
+
+### Appendix B: structure of network
 
 The structure of network can be printed using the script:
 ```

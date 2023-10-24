@@ -84,22 +84,25 @@ for page in range(start_page, end_page, pages_per_file):
       mel = librosa.feature.melspectrogram(y=y, sr=sr)
       mel = librosa.amplitude_to_db(mel, ref=np.max)
       mel = preprocessing.minmax_scale(mel)
+      mel = np.pad(mel, ((0, 0), (0, 1280)), mode="constant", constant_values=0.0)[:, :1280] # approximately 30 seconds
       
       # MFCCs
       mfcc = librosa.feature.mfcc(y=y, sr=sr)
       mfcc = preprocessing.minmax_scale(mfcc)
+      mfcc = np.pad(mfcc, ((0, 0), (0, 1280)), mode="constant", constant_values=0.0)[:, :1280] # approximately 30 seconds
       
       # Chroma frequencies
       chroma = librosa.feature.chroma_stft(y=y, sr=sr)
       chroma = preprocessing.minmax_scale(chroma)
+      chroma = np.pad(chroma, ((0, 0), (0, 1280)), mode="constant", constant_values=0.0)[:, :1280] # approximately 30 seconds
       
       # generate dataset
       row = df.loc[df["spotify_id"] == track["id"]].iloc[0]
       dataset_name.append(row["track"])
       dataset_sid.append(row["spotify_id"])
-      dataset_mel.append(mel.T)
-      dataset_mfcc.append(mfcc.T)
-      dataset_chroma.append(chroma.T)
+      dataset_mel.append(mel)
+      dataset_mfcc.append(mfcc)
+      dataset_chroma.append(chroma)
       dataset_vad.append(np.array([row["valence_tags"], row["arousal_tags"], row["dominance_tags"]], dtype=np.float32))
       emotion_tag.append(np.array(json.loads(re.sub("'", '"', row["seeds"])), dtype=object))
         
@@ -118,11 +121,11 @@ for page in range(start_page, end_page, pages_per_file):
         quit()
   
   # process dataset
-  dataset_name = np.array(dataset_name)
-  dataset_sid = np.array(dataset_sid)
-  dataset_mel = np.array(dataset_mel, dtype=object)
-  dataset_mfcc = np.array(dataset_mfcc, dtype=object)
-  dataset_chroma = np.array(dataset_chroma, dtype=object)
+  dataset_name = np.array(dataset_name, dtype=object)
+  dataset_sid = np.array(dataset_sid, dtype=object)
+  dataset_mel = np.array(dataset_mel, dtype=np.float32)
+  dataset_mfcc = np.array(dataset_mfcc, dtype=np.float32)
+  dataset_chroma = np.array(dataset_chroma, dtype=np.float32)
   dataset_vad = np.array(dataset_vad, dtype=np.float32)
   dataset_emotion_tag = np.array(emotion_tag, dtype=object)
 
