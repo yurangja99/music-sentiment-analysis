@@ -27,7 +27,7 @@ learning_rate = 0.005
 #########################################
 
 # list of emotion tags
-emotion_tag_list=[
+emotion_tag_list = [
   'acerbic', 'aggressive', 'agreeable', 'airy', 'ambitious', 'amiable', 'angry', 'angst-ridden', 
   'animated', 'anxious', 'apocalyptic', 'athletic', 'atmospheric', 'austere', 'autumnal', 
   'belligerent', 'benevolent', 'bitter', 'bittersweet', 'bleak', 'boisterous', 'bombastic', 

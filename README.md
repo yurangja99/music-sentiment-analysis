@@ -5,6 +5,18 @@ Music Sentiment Analyzer (MSA) predicts real-time sentiment of given music as VA
 - **Arousal**: the intensity of emotion provoked by a stimulus
 - **Dominance**: the degree of control exerted by a stimulus
 
+It also provides appropriate tags for the song, according to its mood. 
+There are 276 tags those represents the song, and you can check full list of it in [`train.py`](./train.py).
+```
+emotion_tag_list = [
+  'acerbic', 'aggressive', 'agreeable', 'airy', 'ambitious', 'amiable', 'angry', 'angst-ridden', 
+  'animated', 'anxious', 'apocalyptic', 'athletic', 'atmospheric', 'austere', 'autumnal', 
+  ...
+  'unsettling', 'uplifting', 'urgent', 'virile', 'visceral', 'volatile', 'warm', 'weary', 
+  'whimsical', 'wintry', 'wistful', 'witty', 'wry', 'yearning'
+]
+```
+
 
 ## How to run
 
@@ -14,9 +26,10 @@ Codes of this repository were implemented on:
 - torch 2.1.0+cu118
 
 First, install required packages with conda. 
+If error about torch occurred, delete torch, torchvision, and torchaudio in [`environment.yaml`](./environment.yaml) and retry. 
 ```
 conda env create -f environment.yaml
-conda activate environment
+conda activate msa
 ```
 
 You have to get [MuSe Dataset](https://www.kaggle.com/datasets/cakiki/muse-the-musical-sentiment-dataset) to generate your own dataset. 
@@ -33,6 +46,14 @@ You can edit some parameters in editable zone if you can.
 ```
 python generate_dataset.py
 ```
+
+To train the model, run [`train.py`](./train.py). 
+Hyper-parameters such as number of epochs, learning rate, model structure, and input data can be editted in the editable zone. 
+```
+python train.py
+```
+
+There are some example training results in [Appendix C](#appendix-c-trianing-examples). 
 
 
 ## Dataset
@@ -311,3 +332,7 @@ Params size (MB): 173.63
 Estimated Total Size (MB): 13954.69
 ===============================================================================================
 ```
+
+### Appendix C: trianing examples
+
+(TODO)
