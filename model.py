@@ -195,8 +195,7 @@ class Network(nn.Module):
     self.emotion_tagging_model = nn.Sequential(
       nn.Linear(512 * self.groups, 256),
       nn.ReLU(),
-      nn.Linear(256, num_tags),
-      nn.Sigmoid() # sigmoid to classify
+      nn.Linear(256, num_tags)
     )
   
   def __make_block(
