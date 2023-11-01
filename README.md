@@ -335,4 +335,81 @@ Estimated Total Size (MB): 13954.69
 
 ### Appendix C: trianing examples
 
-(TODO)
+In this example, the model only use Mel-Spectrogram to predict sentiment. 
+It can reduce model size and training time. 
+
+The exact training options were:
+```
+use_mel = True
+use_mfcc = False
+use_chroma = False
+block = BottleneckResidualBlock # BottleneckResidualBlock
+num_blocks = [2, 2, 1, 1, 1, 1]
+
+save_epoch_freq = 100
+epochs = 3000
+batch_size = 32
+learning_rate = 0.0003
+```
+
+For fast training, I used `generated_dataset_from_0_to_100.npz` which consists of 3050 songs as a training dataset. 
+
+![](./assets/example_train.png)
+
+First, I used train dataset as test dataset to see whether training did well or not. 
+As you can see in the example, training to train dataset is done well. 
+
+The second example shows when test dataset is `generated_dataset_from_1200_to_1233.npz` which consists of 784 songs. 
+VAD vector and tags were inaccurate than the first one. 
+It's because of the domain gap between train dataset and test dataset. 
+The original dataset was sorted by emotion, so one dataset file consists of similar songs. 
+Songs in the train dataset tends to be angry, but songs in the test dataset tends to be bright and peaceful. 
+So, training should include multiple dataset files. 
+
+```
+# train set == test set
+
+Test result:
+- VAD loss: 0.023191880599673215
+- Tag loss: 0.020545966806821525
+- Tag precision: 0.5505582656041592
+- Tag recall: 0.9758483352022379
+- Tag F1 Score: 0.7039557698948842
+Example:
+- Name: Die MF Die
+- SID: 5bU4KX47KqtDKKaLM4QCzh
+- VAD pred: tensor([-0.5196,  0.0760,  0.6237], device='cuda:0', grad_fn=<SelectBackward0>)
+- VAD gt: tensor([-0.4578,  0.1239,  0.6576], device='cuda:0')
+- Tag pred example: tensor([4.8599e-07, 9.9594e-01, 1.3708e-07, 1.4808e-07, 5.4422e-07, 1.2561e-10,
+        4.2145e-02, 4.5206e-05, 1.2217e-07, 7.0582e-06], device='cuda:0',
+       grad_fn=<SliceBackward0>)
+- Tag gt example: tensor([0., 1., 0., 0., 0., 0., 0., 0., 0., 0.], device='cuda:0')
+- Tag pred: ['aggressive']
+- Tag gt: ['aggressive']
+- Tag precision: 1.0
+- Tag recall: 1.0
+- F1 score: 1.0
+
+
+# train set != test set
+
+Test result:
+- VAD loss: 0.4998335361480713
+- Tag loss: 266.3408083152771
+- Tag precision: 0.005741128648721956
+- Tag recall: 0.022121212121212125
+- Tag F1 Score: 0.009116299718119253
+Example:
+- Name: Goodnight
+- SID: 0xYHL23Ny8FHvbQPkQNrWL
+- VAD pred: tensor([0.1227, 0.2712, 0.2467], device='cuda:0')
+- VAD gt: tensor([1.8104, 1.1250, 1.4511], device='cuda:0')
+- Tag pred example: tensor([1.6973e-05, 3.2380e-02, 1.2783e-08, 2.9825e-08, 2.5688e-03, 2.9652e-09,
+        6.0355e-01, 2.6009e-06, 1.7401e-08, 4.9122e-06], device='cuda:0')
+- Tag gt example: tensor([0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], device='cuda:0')
+- Tag pred: ['angry']
+- Tag gt: ['peaceful']
+- Tag precision: 0.0
+- Tag recall: 0.0
+- F1 score: 0.0
+```

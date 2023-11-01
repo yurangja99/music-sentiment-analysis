@@ -16,13 +16,13 @@ use_mel = True
 use_mfcc = False
 use_chroma = False
 block = BottleneckResidualBlock # BottleneckResidualBlock
-num_blocks = [2, 2, 2, 2, 2, 2]
+num_blocks = [2, 2, 1, 1, 1, 1]
 
 # training hyperparameters
-save_epoch_freq = 10
-epochs = 2000
+save_epoch_freq = 100
+epochs = 3000
 batch_size = 32
-learning_rate = 0.005
+learning_rate = 0.0003
 
 #########################################
 
@@ -72,17 +72,17 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 train_dataset = CustomDataset(
   npz_path_list=[
     "generated_dataset_from_0_to_100.npz",
-    #"generated_dataset_from_100_to_200.npz",
-    #"generated_dataset_from_200_to_300.npz",
-    #"generated_dataset_from_300_to_400.npz",
-    #"generated_dataset_from_400_to_500.npz",
-    #"generated_dataset_from_500_to_600.npz",
-    #"generated_dataset_from_600_to_700.npz",
-    #"generated_dataset_from_700_to_800.npz",
-    #"generated_dataset_from_800_to_900.npz",
-    #"generated_dataset_from_900_to_1000.npz",
-    #"generated_dataset_from_1000_to_1100.npz",
-    #"generated_dataset_from_1100_to_1200.npz",
+    "generated_dataset_from_100_to_200.npz",
+    "generated_dataset_from_200_to_300.npz",
+    "generated_dataset_from_300_to_400.npz",
+    "generated_dataset_from_400_to_500.npz",
+    "generated_dataset_from_500_to_600.npz",
+    "generated_dataset_from_600_to_700.npz",
+    "generated_dataset_from_700_to_800.npz",
+    "generated_dataset_from_800_to_900.npz",
+    "generated_dataset_from_900_to_1000.npz",
+    "generated_dataset_from_1000_to_1100.npz",
+    "generated_dataset_from_1100_to_1200.npz",
     #"generated_dataset_from_1200_to_1233.npz",
   ],
   emotion_tag_list=emotion_tag_list,
@@ -173,7 +173,7 @@ else:
 
 # training
 pos_weight = torch.mean(train_dataset.tag_array, dim=0) + 1e-5
-pos_weight = (torch.reciprocal(pos_weight) - 1.0) * 0.9
+pos_weight = torch.reciprocal(pos_weight) - 1.0
 vad_criterion = torch.nn.HuberLoss()
 tag_criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 model.train()
@@ -266,7 +266,8 @@ tag_recall_test = []
 model.eval()
 for (_, _, mel, mfcc, chroma, vad_gt, tag_gt) in tqdm(test_dataloader):
   # predict
-  vad_pred, tag_pred = model(mel, mfcc, chroma)
+  with torch.no_grad():
+    vad_pred, tag_pred = model(mel, mfcc, chroma)
   
   # calculate loss
   vad_loss = vad_criterion(vad_pred, vad_gt)
@@ -289,7 +290,7 @@ print("Test result:")
 print(f"- VAD loss: {sum(vad_loss_test) / len(vad_loss_test)}")
 print(f"- Tag loss: {sum(tag_loss_test) / len(tag_loss_test)}")
 print(f"- Tag precision: {tag_precision}")
-print(f"- Tag precision: {tag_recall}")
+print(f"- Tag recall: {tag_recall}")
 print(f"- Tag F1 Score: {2 * tag_precision * tag_recall / (tag_precision + tag_recall) if tag_precision * tag_recall > 0.0 else 0.0}")
 
 # print example
@@ -297,7 +298,8 @@ name, sid, mel, mfcc, chroma, vad_gt, tag_gt = test_dataset[0]
 mel = mel.unsqueeze(0)
 mfcc = mfcc.unsqueeze(0)
 chroma = chroma.unsqueeze(0)
-vad_pred, tag_pred = model(mel, mfcc, chroma)
+with torch.no_grad():
+  vad_pred, tag_pred = model(mel, mfcc, chroma)
 vad_pred, tag_pred = vad_pred[0], tag_pred[0]
 pred = torch.nn.Sigmoid()(tag_pred)
 precision = torch.sum(pred >= 0.5).item()
