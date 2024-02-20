@@ -41,7 +41,7 @@ Next, open [`user_values.py`](./user_values.py) and type path to your csv file, 
 - `SPOTIFY_SECRET`: Spotify API SECRET
 
 Run [`generate_dataset.py`](./generate_dataset.py) to preprocess your own dataset. 
-After running the command, you can see some npz files those compose a dataset. 
+After running the command, you can see some .npy and .npz files in `data` directory. 
 You can edit some parameters in editable zone if you can. 
 ```
 python generate_dataset.py
@@ -62,7 +62,7 @@ The example data is shown in [Appendix A](#appendix-a-example-of-dataset).
 
 I used [MuSe Dataset](https://www.kaggle.com/datasets/cakiki/muse-the-musical-sentiment-dataset) that contains sentiment information for 90,001 songs. 
 
-It contains Spotify ID of songs, whose audios are available by using [Spotipy API](https://spotipy.readthedocs.io/en/2.22.1/?highlight=analysis#). However, there are some rows with no spotify id or no preview mp3, 34,951 songs are actually used for this project. 
+It contains Spotify ID of songs, whose audios are available by using [Spotipy API](https://spotipy.readthedocs.io/en/2.22.1/?highlight=analysis#). However, there are some rows with no spotify id or no preview mp3, 34,921 songs are actually used for this project. 
 
 After pre-processing the dataset, input and output of my model are:
 - **input**
@@ -79,8 +79,8 @@ After pre-processing the dataset, input and output of my model are:
         - `[[1., 0., 1., 0.]]` for emotion tag dictionary `["reckless", "innocent", "confident", "serious]` means the audio tends to be reckless and confident, and not innocent and serious. 
 
 Because dataset preprocessing task requires a lot of time, I implemented [`generate_dataset.py`](./generate_dataset.py) to save chunk of the full dataset. 
-After running the code, there would be some npz files instead of one huge npz file. 
-The npz files are combined to a full dataset during training. 
+After running the code, there would be some .npy and .npz files instead of one huge file. 
+The files are combined to a full dataset during training. 
 
 
 ## Model
@@ -118,60 +118,54 @@ Then, residual block should use short-cut convolution layers instead of identity
 
 Example of dataset created by [`generate_dataset.py`](./generate_dataset.py). 
 ```
-import numpy as np
-dataset = np.load("./generated_dataset_from_0_to_5.npz", allow_pickle=True)
-print("- Shape")
-print(dataset["name"].shape)
-print(dataset["sid"].shape)
-print(dataset["mel"].shape)
-print(dataset["mfcc"].shape)
-print(dataset["chroma"].shape)
-print(dataset["vad"].shape)
-print(dataset["tag"].shape)
-print("- Example")
-print(dataset["name"][0])
-print(dataset["sid"][0])
-print(dataset["mel"][0])
-print(dataset["mfcc"][0])
-print(dataset["chroma"][0])
-print(dataset["vad"][0])
-print(dataset["tag"][0])
+from dataset import CustomDataset
+dataset = CustomDataset(
+  path_list=[
+    "data/generated_dataset_from_0_to_100",
+  ],
+  normalize_vad=True,
+  device="cuda"
+)
+
+print("Len:", len(dataset))
+
+elem = dataset[0]
+
+print("Example:")
+print(elem[0])
+print(elem[1])
+print(elem[2].shape)
+print(elem[3].shape)
+print(elem[4].shape)
+print(elem[5], elem[5].shape)
+print(elem[6], elem[6].shape)
+
 
 Output:
-- Shape
-(160,)
-(160,)
-(160, 128, 1280)
-(160, 20, 1280)
-(160, 12, 1280)       
-(160, 3)
-(160,)
-- Example
+Len: 3050
+Example:
 Die MF Die
 5bU4KX47KqtDKKaLM4QCzh
-[[0.8921931  0.8826394  0.86752355 ... 0.7913857  0.7893288  0.71895707]
- [1.         1.         0.92802167 ... 0.8995514  0.89280266 0.8938351 ]
- [0.72412103 0.8445727  0.8771957  ... 1.         1.         1.        ]
- ...
- [0.         0.03049159 0.01508701 ... 0.         0.         0.        ]
- [0.         0.0667994  0.04237247 ... 0.         0.         0.        ]
- [0.         0.         0.         ... 0.         0.         0.        ]]
-[[0.20229463 1.         1.         ... 0.53347147 0.19537799 0.        ]
- [1.         0.9360726  0.8730493  ... 0.912819   0.79200804 0.7885052 ]
- [0.37528056 0.28411028 0.21658814 ... 0.26413622 0.43587255 0.7210432 ]
- ...
- [0.31274277 0.23685233 0.20802146 ... 0.2846035  0.21710268 0.42721128]
- [0.1658746  0.07240864 0.04286872 ... 0.10906948 0.18872836 0.47467315]
- [0.1645768  0.12131324 0.1212945  ... 0.02883453 0.15131754 0.42550078]]
-[[0.8064743  0.2711213  0.23993473 ... 0.10256296 0.36805677 0.10222125]
- [0.45724523 0.33245444 0.3460595  ... 0.5871675  1.         0.78885174]
- [0.60231984 0.3406307  0.47332138 ... 1.         0.98416984 1.        ]
- ...
- [1.         1.         0.99999994 ... 0.17692173 0.44089174 0.886595  ]
- [0.6301825  0.4857059  0.6312328  ... 0.04157645 0.0155257  0.2726667 ]
- [0.6730951  0.36262012 0.42126852 ... 0.06647283 0.07971317 0.        ]]
-[3.7711766 5.348235  5.441765 ]
-['aggressive']
+torch.Size([1, 128, 128])
+torch.Size([1, 20, 128])
+torch.Size([1, 12, 128])
+tensor([-0.4578,  0.1240,  0.6577], device='cuda:0') torch.Size([3])
+tensor([0., 1., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+        0., 0., 0., 0., 0., 0.], device='cuda:0') torch.Size([276])
 ```
 
 ### Appendix B: structure of network
@@ -334,82 +328,4 @@ Estimated Total Size (MB): 13954.69
 ```
 
 ### Appendix C: trianing examples
-
-In this example, the model only use Mel-Spectrogram to predict sentiment. 
-It can reduce model size and training time. 
-
-The exact training options were:
-```
-use_mel = True
-use_mfcc = False
-use_chroma = False
-block = BottleneckResidualBlock # BottleneckResidualBlock
-num_blocks = [2, 2, 1, 1, 1, 1]
-
-save_epoch_freq = 100
-epochs = 3000
-batch_size = 32
-learning_rate = 0.0003
-```
-
-For fast training, I used `generated_dataset_from_0_to_100.npz` which consists of 3050 songs as a training dataset. 
-
-![](./assets/example_train.png)
-
-First, I used train dataset as test dataset to see whether training did well or not. 
-As you can see in the example, training to train dataset is done well. 
-
-The second example shows when test dataset is `generated_dataset_from_1200_to_1233.npz` which consists of 784 songs. 
-VAD vector and tags were inaccurate than the first one. 
-It's because of the domain gap between train dataset and test dataset. 
-The original dataset was sorted by emotion, so one dataset file consists of similar songs. 
-Songs in the train dataset tends to be angry, but songs in the test dataset tends to be bright and peaceful. 
-So, training should include multiple dataset files. 
-
-```
-# train set == test set
-
-Test result:
-- VAD loss: 0.023191880599673215
-- Tag loss: 0.020545966806821525
-- Tag precision: 0.5505582656041592
-- Tag recall: 0.9758483352022379
-- Tag F1 Score: 0.7039557698948842
-Example:
-- Name: Die MF Die
-- SID: 5bU4KX47KqtDKKaLM4QCzh
-- VAD pred: tensor([-0.5196,  0.0760,  0.6237], device='cuda:0', grad_fn=<SelectBackward0>)
-- VAD gt: tensor([-0.4578,  0.1239,  0.6576], device='cuda:0')
-- Tag pred example: tensor([4.8599e-07, 9.9594e-01, 1.3708e-07, 1.4808e-07, 5.4422e-07, 1.2561e-10,
-        4.2145e-02, 4.5206e-05, 1.2217e-07, 7.0582e-06], device='cuda:0',
-       grad_fn=<SliceBackward0>)
-- Tag gt example: tensor([0., 1., 0., 0., 0., 0., 0., 0., 0., 0.], device='cuda:0')
-- Tag pred: ['aggressive']
-- Tag gt: ['aggressive']
-- Tag precision: 1.0
-- Tag recall: 1.0
-- F1 score: 1.0
-
-
-# train set != test set
-
-Test result:
-- VAD loss: 0.4998335361480713
-- Tag loss: 266.3408083152771
-- Tag precision: 0.005741128648721956
-- Tag recall: 0.022121212121212125
-- Tag F1 Score: 0.009116299718119253
-Example:
-- Name: Goodnight
-- SID: 0xYHL23Ny8FHvbQPkQNrWL
-- VAD pred: tensor([0.1227, 0.2712, 0.2467], device='cuda:0')
-- VAD gt: tensor([1.8104, 1.1250, 1.4511], device='cuda:0')
-- Tag pred example: tensor([1.6973e-05, 3.2380e-02, 1.2783e-08, 2.9825e-08, 2.5688e-03, 2.9652e-09,
-        6.0355e-01, 2.6009e-06, 1.7401e-08, 4.9122e-06], device='cuda:0')
-- Tag gt example: tensor([0., 0., 0., 0., 0., 0., 0., 0., 0., 0.], device='cuda:0')
-- Tag pred: ['angry']
-- Tag gt: ['peaceful']
-- Tag precision: 0.0
-- Tag recall: 0.0
-- F1 score: 0.0
-```
+full dataset으로 학습 후 작성

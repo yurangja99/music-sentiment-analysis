@@ -1,3 +1,4 @@
+import os
 import torch
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
@@ -5,108 +6,74 @@ from tqdm import tqdm
 
 from dataset import CustomDataset
 from model import ResidualBlock, BottleneckResidualBlock, Network
+from user_values import uv
 
 #########################################
 # EDITABLE
 
+# dataset
+dirname = "data"
+
 # model hyperparameters
-resume_training = False
-model_version = "test"
+resume_training = True
+model_version = "test_0001"
 use_mel = True
 use_mfcc = False
 use_chroma = False
 block = BottleneckResidualBlock # BottleneckResidualBlock
-num_blocks = [2, 2, 1, 1, 1, 1]
+num_blocks = [1, 1, 1, 1, 1, 1]
 
 # training hyperparameters
-save_epoch_freq = 100
-epochs = 3000
-batch_size = 32
-learning_rate = 0.0003
+save_epoch_freq = 5
+epochs = 1500
+batch_size = 64
+learning_rate = 0.0001
 
 #########################################
 
 # list of emotion tags
-emotion_tag_list = [
-  'acerbic', 'aggressive', 'agreeable', 'airy', 'ambitious', 'amiable', 'angry', 'angst-ridden', 
-  'animated', 'anxious', 'apocalyptic', 'athletic', 'atmospheric', 'austere', 'autumnal', 
-  'belligerent', 'benevolent', 'bitter', 'bittersweet', 'bleak', 'boisterous', 'bombastic', 
-  'brash', 'brassy', 'bravado', 'bright', 'brittle', 'brooding', 'calm', 'campy', 'capricious', 
-  'carefree', 'cathartic', 'celebratory', 'cerebral', 'cheerful', 'child-like', 'circular', 
-  'clinical', 'cold', 'comic', 'complex', 'confident', 'confrontational', 'consoling', 'crunchy', 
-  'cynical', 'dark', 'defiant', 'delicate', 'demonic', 'desperate', 'detached', 'devotional', 
-  'difficult', 'dignified', 'distraught', 'dramatic', 'dreamy', 'driving', 'druggy', 'earnest', 
-  'earthy', 'ebullient', 'eccentric', 'ecstatic', 'eerie', 'effervescent', 'elaborate', 'elegant', 
-  'elegiac', 'energetic', 'enigmatic', 'epic', 'erotic', 'ethereal', 'euphoric', 'exciting', 
-  'exotic', 'explosive', 'exuberant', 'feral', 'feverish', 'fierce', 'fiery', 'flashy', 'flowing', 
-  'fractured', 'freewheeling', 'fun', 'funereal', 'gentle', 'giddy', 'gleeful', 'gloomy', 
-  'good-natured', 'graceful', 'greasy', 'grim', 'gritty', 'gutsy', 'halloween', 'happy', 'harsh', 
-  'hedonistic', 'hostile', 'humorous', 'hungry', 'hymn-like', 'hyper', 'hypnotic', 'indulgent', 
-  'innocent', 'insular', 'intense', 'intimate', 'introspective', 'ironic', 'irreverent', 'jittery', 
-  'jovial', 'joyous', 'kinetic', 'knotty', 'laid-back', 'languid', 'lazy', 'light', 'literate', 
-  'lively', 'lonely', 'lush', 'lyrical', 'macabre', 'malevolent', 'manic', 'marching', 'martial', 
-  'meandering', 'mechanical', 'meditative', 'melancholy', 'mellow', 'menacing', 'messy', 'mighty', 
-  'monastic', 'monumental', 'motoric', 'mysterious', 'mystical', 'naive', 'narcotic', 'narrative', 
-  'negative', 'nervous', 'nihilistic', 'noble', 'nocturnal', 'nostalgic', 'ominous', 'optimistic', 
-  'opulent', 'organic', 'ornate', 'outraged', 'outrageous', 'paranoid', 'passionate', 'pastoral', 
-  'peaceful', 'perky', 'philosophical', 'plaintive', 'playful', 'poignant', 'positive', 'powerful', 
-  'precious', 'provocative', 'pure', 'quiet', 'quirky', 'rambunctious', 'ramshackle', 'raucous', 
-  'reassuring', 'rebellious', 'reckless', 'refined', 'reflective', 'regretful', 'relaxed', 
-  'reserved', 'resolute', 'restrained', 'reverent', 'rollicking', 'romantic', 'rousing', 'rowdy', 
-  'rustic', 'sacred', 'sad', 'sarcastic', 'sardonic', 'satirical', 'savage', 'scary', 
-  'scary music', 'searching', 'self-conscious', 'sensual', 'sentimental', 'serious', 'sexual', 
-  'sexy', 'shimmering', 'silly', 'sleazy', 'slick', 'smooth', 'snide', 'soft', 'somber', 
-  'soothing', 'sophisticated', 'spacey', 'sparkling', 'sparse', 'spicy', 'spiritual', 'spooky', 
-  'sprawling', 'sprightly', 'springlike', 'stately', 'street-smart', 'strong', 'stylish', 
-  'suffocating', 'sugary', 'summery', 'suspenseful', 'swaggering', 'sweet', 'technical', 'tender', 
-  'tense', 'theatrical', 'thoughtful', 'threatening', 'thrilling', 'thuggish', 'tragic', 
-  'translucent', 'transparent', 'trashy', 'trippy', 'triumphant', 'uncompromising', 'understated', 
-  'unsettling', 'uplifting', 'urgent', 'virile', 'visceral', 'volatile', 'warm', 'weary', 
-  'whimsical', 'wintry', 'wistful', 'witty', 'wry', 'yearning'
-]
+emotion_tag_list = uv.EMOTION_TAG_LIST
 
 # device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # load train and test dataset
 train_dataset = CustomDataset(
-  npz_path_list=[
-    "generated_dataset_from_0_to_100.npz",
-    "generated_dataset_from_100_to_200.npz",
-    "generated_dataset_from_200_to_300.npz",
-    "generated_dataset_from_300_to_400.npz",
-    "generated_dataset_from_400_to_500.npz",
-    "generated_dataset_from_500_to_600.npz",
-    "generated_dataset_from_600_to_700.npz",
-    "generated_dataset_from_700_to_800.npz",
-    "generated_dataset_from_800_to_900.npz",
-    "generated_dataset_from_900_to_1000.npz",
-    "generated_dataset_from_1000_to_1100.npz",
-    "generated_dataset_from_1100_to_1200.npz",
-    #"generated_dataset_from_1200_to_1233.npz",
+  path_list=[
+    os.path.join(dirname, "generated_dataset_from_0_to_100"),
+    os.path.join(dirname, "generated_dataset_from_100_to_200"),
+    os.path.join(dirname, "generated_dataset_from_200_to_300"),
+    os.path.join(dirname, "generated_dataset_from_300_to_400"),
+    os.path.join(dirname, "generated_dataset_from_400_to_500"),
+    os.path.join(dirname, "generated_dataset_from_500_to_600"),
+    os.path.join(dirname, "generated_dataset_from_600_to_700"),
+    os.path.join(dirname, "generated_dataset_from_700_to_800"),
+    os.path.join(dirname, "generated_dataset_from_800_to_900"),
+    os.path.join(dirname, "generated_dataset_from_900_to_1000"),
+    os.path.join(dirname, "generated_dataset_from_1000_to_1100"),
+    os.path.join(dirname, "generated_dataset_from_1100_to_1200"),
+    #os.path.join(dirname, "generated_dataset_from_1200_to_1233"),
   ],
-  emotion_tag_list=emotion_tag_list,
   normalize_vad=True,
   device=device
 )
 test_dataset = CustomDataset(
-  npz_path_list=[
-    #"generated_dataset_from_0_to_100.npz",
-    #"generated_dataset_from_100_to_200.npz",
-    #"generated_dataset_from_200_to_300.npz",
-    #"generated_dataset_from_300_to_400.npz",
-    #"generated_dataset_from_400_to_500.npz",
-    #"generated_dataset_from_500_to_600.npz",
-    #"generated_dataset_from_600_to_700.npz",
-    #"generated_dataset_from_700_to_800.npz",
-    #"generated_dataset_from_800_to_900.npz",
-    #"generated_dataset_from_900_to_1000.npz",
-    #"generated_dataset_from_1000_to_1100.npz",
-    #"generated_dataset_from_1100_to_1200.npz",
-    "generated_dataset_from_1200_to_1233.npz",
+  path_list=[
+    #os.path.join(dirname, "generated_dataset_from_0_to_100"),
+    #os.path.join(dirname, "generated_dataset_from_100_to_200"),
+    #os.path.join(dirname, "generated_dataset_from_200_to_300"),
+    #os.path.join(dirname, "generated_dataset_from_300_to_400"),
+    #os.path.join(dirname, "generated_dataset_from_400_to_500"),
+    #os.path.join(dirname, "generated_dataset_from_500_to_600"),
+    #os.path.join(dirname, "generated_dataset_from_600_to_700"),
+    #os.path.join(dirname, "generated_dataset_from_700_to_800"),
+    #os.path.join(dirname, "generated_dataset_from_800_to_900"),
+    #os.path.join(dirname, "generated_dataset_from_900_to_1000"),
+    #os.path.join(dirname, "generated_dataset_from_1000_to_1100"),
+    #os.path.join(dirname, "generated_dataset_from_1100_to_1200"),
+    os.path.join(dirname, "generated_dataset_from_1200_to_1233"),
   ],
-  emotion_tag_list=emotion_tag_list,
-  normalize_vad=True,
+  normalize_vad=False,
   device=device
 )
 
@@ -172,10 +139,8 @@ else:
   tag_recall_history = []
 
 # training
-pos_weight = torch.mean(train_dataset.tag_array, dim=0) + 1e-5
-pos_weight = torch.reciprocal(pos_weight) - 1.0
 vad_criterion = torch.nn.HuberLoss()
-tag_criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+tag_criterion = torch.nn.BCEWithLogitsLoss(pos_weight=train_dataset.pos_weight)
 model.train()
 for epoch in range(start_epoch, epochs + 1):
   print(f"Epoch {epoch}:")
@@ -268,6 +233,9 @@ for (_, _, mel, mfcc, chroma, vad_gt, tag_gt) in tqdm(test_dataloader):
   # predict
   with torch.no_grad():
     vad_pred, tag_pred = model(mel, mfcc, chroma)
+  
+  # normalize vad
+  vad_gt = (vad_gt - train_dataset.vad_mean) / train_dataset.vad_std
   
   # calculate loss
   vad_loss = vad_criterion(vad_pred, vad_gt)

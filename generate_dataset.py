@@ -6,6 +6,7 @@ import re
 import json
 import math
 import librosa
+import os
 from sklearn import preprocessing
 from tqdm import tqdm
 
@@ -22,6 +23,8 @@ PLOT = False
 
 start_page = 0
 pages_per_file = 100
+
+dirname = "data"
 
 #########################################
 
@@ -50,6 +53,10 @@ df = pd.read_csv(uv.MUSE_CSV_PATH) \
 if DEBUG:
   print(f"Dataset of {len(df)} rows")
   print(f"First 10 rows: \n{df[:10]}")
+
+os.makedirs(dirname, exist_ok=True)
+emotion_tag_list = uv.EMOTION_TAG_LIST
+emotion_tag_idx = dict((t, i) for (i, t) in enumerate(emotion_tag_list))
 
 # get features
 spotify_id_list = df["spotify_id"].to_list()
@@ -128,6 +135,10 @@ for page in range(start_page, end_page, pages_per_file):
   dataset_chroma = np.array(dataset_chroma, dtype=np.float32)
   dataset_vad = np.array(dataset_vad, dtype=np.float32)
   dataset_emotion_tag = np.array(emotion_tag, dtype=object)
+  is_interesting_tag = np.vectorize(lambda t: t in emotion_tag_list, otypes=[bool])
+  find_tag_idx = np.vectorize(lambda t: emotion_tag_idx[t], otypes=[int])
+  idxs = [find_tag_idx(tags[is_interesting_tag(tags)]) for tags in dataset_emotion_tag]
+  dataset_tag = np.array([np.sum(np.eye(len(emotion_tag_list))[idx], axis=0) for idx in idxs], dtype=np.float32)
 
   if DEBUG:
     print(f"Dataset:")
@@ -137,24 +148,24 @@ for page in range(start_page, end_page, pages_per_file):
     print(f"Dataset-mfcc: {dataset_mfcc.shape}")
     print(f"Dataset-chroma: {dataset_chroma.shape}")
     print(f"Dataset-vad: {dataset_vad.shape}")
-    print(f"Dataset-tag: {dataset_emotion_tag.shape}")
+    print(f"Dataset-tag: {dataset_tag.shape}")
     print(f"Example:")
     print(f"Dataset-name: {dataset_name[0]}")
     print(f"Dataset-sid: {dataset_sid[0]}")
     print(f"Dataset-vad: {dataset_vad[0]}")
-    print(f"Dataset-tag: {dataset_emotion_tag[0]}")
+    print(f"Dataset-tag: {dataset_tag[0]}")
 
   # save dataset
   np.savez(
-    f"generated_dataset_from_{page}_to_{page_to}.npz", 
+    os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_name_sid.npz"),
     name=dataset_name,
-    sid=dataset_sid,
-    mel=dataset_mel,
-    mfcc=dataset_mfcc,
-    chroma=dataset_chroma,
-    vad=dataset_vad,
-    tag=dataset_emotion_tag
+    sid=dataset_sid
   )
+  np.save(os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_mel.npy"), dataset_mel)
+  np.save(os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_mfcc.npy"), dataset_mfcc)
+  np.save(os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_chroma.npy"), dataset_chroma)
+  np.save(os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_vad.npy"), dataset_vad)
+  np.save(os.path.join(dirname, f"generated_dataset_from_{page}_to_{page_to}_tag.npy"), dataset_tag)
   
   if DEBUG:
     print(f"Dataset saved ({page_to} / {end_page}): generated_dataset_from_{page}_to_{page_to}.npz")

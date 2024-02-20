@@ -162,6 +162,7 @@ cython_debug/
 dummy
 **/*.csv
 **/*.mp3
+**/*.npy
 **/*.npz
 **/*.out
 **/*.pptx
